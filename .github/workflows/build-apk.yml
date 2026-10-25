@@ -1,3 +1,4 @@
+```yaml
 name: Build Koup OS APK
 
 on:
@@ -27,10 +28,10 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Install Android SDK
+      - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Android build components
+      - name: Install required Android SDK packages
         run: sdkmanager "platforms;android-33" "build-tools;33.0.2"
 
       - name: Install Gradle
@@ -48,3 +49,4 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
+```
