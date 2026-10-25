@@ -1,4 +1,3 @@
-```java
 package com.koup.os;
 
 import android.app.Activity;
@@ -661,4 +660,3 @@ public class MainActivity extends Activity {
         ).show();
     }
 }
-```
