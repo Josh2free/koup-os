@@ -3,13 +3,18 @@ package com.koup.os;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
+import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -27,17 +32,16 @@ import java.util.Locale;
 
 public class MainActivity extends Activity {
 
-    private final int BG = Color.rgb(8, 9, 11);
-    private final int PANEL = Color.rgb(19, 21, 25);
-    private final int WHITE = Color.rgb(245, 246, 248);
-    private final int MUTED = Color.rgb(151, 157, 166);
-    private final int RED = Color.rgb(227, 74, 74);
-    private final int BORDER = Color.rgb(42, 45, 51);
+    private static final int BG = Color.rgb(10, 11, 13);
+    private static final int PANEL = Color.rgb(21, 23, 27);
+    private static final int PANEL2 = Color.rgb(29, 31, 36);
+    private static final int RED = Color.rgb(229, 43, 48);
+    private static final int WHITE = Color.rgb(246, 247, 249);
+    private static final int MUTED = Color.rgb(151, 155, 163);
+    private static final int LINE = Color.rgb(47, 49, 55);
 
     private LinearLayout root;
-    private TextView clockView;
-    private TextView dateView;
-    private String currentPage = "HOME";
+    private String currentScreen = "HOME";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,618 +49,788 @@ public class MainActivity extends Activity {
 
         getWindow().setStatusBarColor(BG);
         getWindow().setNavigationBarColor(BG);
-        getWindow().addFlags(
-                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
-        );
-
-        getWindow().getDecorView().setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_FULLSCREEN
-                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                        | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+        getWindow().setFlags(
+                WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN
         );
 
         showHome();
     }
 
-    @Override
-    public void onBackPressed() {
-        if (!"HOME".equals(currentPage)) {
-            showHome();
-        } else {
-            super.onBackPressed();
-        }
-    }
+    private void setup(String screen) {
+        currentScreen = screen;
 
-    private void showHome() {
-        currentPage = "HOME";
-        root = newRoot();
-
-        LinearLayout header = new LinearLayout(this);
-        header.setOrientation(LinearLayout.HORIZONTAL);
-        header.setGravity(Gravity.CENTER_VERTICAL);
-
-        LinearLayout brand = new LinearLayout(this);
-        brand.setOrientation(LinearLayout.VERTICAL);
-
-        TextView logo = text("KOUP", 29, WHITE, true);
-        logo.setLetterSpacing(0.20f);
-
-        TextView sub = text("OS  /  DRIVER INTERFACE", 10, MUTED, true);
-        sub.setLetterSpacing(0.13f);
-
-        brand.addView(logo);
-        brand.addView(sub);
-
-        header.addView(brand, new LinearLayout.LayoutParams(0, -2, 1));
-
-        LinearLayout time = new LinearLayout(this);
-        time.setOrientation(LinearLayout.VERTICAL);
-        time.setGravity(Gravity.RIGHT);
-
-        clockView = text("--:--", 27, WHITE, false);
-        dateView = text("--", 11, MUTED, false);
-
-        time.addView(clockView);
-        time.addView(dateView);
-        header.addView(time);
-
-        root.addView(header);
-
-        addDivider(root, 15, 17);
-
-        LinearLayout hero = new LinearLayout(this);
-        hero.setOrientation(LinearLayout.VERTICAL);
-        hero.setGravity(Gravity.CENTER_VERTICAL);
-        hero.setPadding(dp(24), dp(20), dp(24), dp(20));
-        hero.setBackground(round(PANEL, dp(20), RED, dp(1)));
-
-        TextView eyebrow = text("YOUR DRIVE  /  YOUR SPACE", 10, RED, true);
-        eyebrow.setLetterSpacing(0.15f);
-
-        TextView title = text("Made for\nyour drive.", 31, WHITE, true);
-
-        TextView description = text(
-                "Your car. Your sound. Your experience.",
-                12, MUTED, false
-        );
-
-        hero.addView(eyebrow);
-
-        LinearLayout.LayoutParams titleParams =
-                new LinearLayout.LayoutParams(-1, -2);
-        titleParams.topMargin = dp(8);
-        hero.addView(title, titleParams);
-
-        LinearLayout.LayoutParams descParams =
-                new LinearLayout.LayoutParams(-1, -2);
-        descParams.topMargin = dp(7);
-        hero.addView(description, descParams);
-
-        Button dplay = button("OPEN D-PLAY   ↗", true);
-
-        LinearLayout.LayoutParams dplayParams =
-                new LinearLayout.LayoutParams(-1, dp(49));
-        dplayParams.topMargin = dp(18);
-        hero.addView(dplay, dplayParams);
-
-        dplay.setOnClickListener(v ->
-                launchMatchingApp(
-                        new String[]{"d-play", "dplay", "di-play", "diplay"},
-                        "D-Play"
-                )
-        );
-
-        LinearLayout.LayoutParams heroParams =
-                new LinearLayout.LayoutParams(-1, 0, 1.0f);
-        root.addView(hero, heroParams);
-
-        TextView quick = text("QUICK ACCESS", 10, MUTED, true);
-        quick.setLetterSpacing(0.18f);
-
-        LinearLayout.LayoutParams quickParams =
-                new LinearLayout.LayoutParams(-1, -2);
-        quickParams.topMargin = dp(16);
-        quickParams.bottomMargin = dp(9);
-        root.addView(quick, quickParams);
-
-        LinearLayout row1 = new LinearLayout(this);
-        row1.setOrientation(LinearLayout.HORIZONTAL);
-
-        row1.addView(tile("MAP", "Navigation",
-                () -> showCategory("Navigation")),
-                weightParams());
-
-        row1.addView(spacer(), spacerParams());
-
-        row1.addView(tile("♪", "Music",
-                () -> showCategory("Music")),
-                weightParams());
-
-        row1.addView(spacer(), spacerParams());
-
-        row1.addView(tile("☎", "Phone",
-                () -> showCategory("Phone")),
-                weightParams());
-
-        row1.addView(spacer(), spacerParams());
-
-        row1.addView(tile("•••", "Apps",
-                this::showApps),
-                weightParams());
-
-        root.addView(row1, new LinearLayout.LayoutParams(-1, dp(88)));
-
-        LinearLayout bottom = new LinearLayout(this);
-        bottom.setOrientation(LinearLayout.HORIZONTAL);
-        bottom.setGravity(Gravity.CENTER_VERTICAL);
-
-        TextView footer = text("KOUP OS  /  0.2 CONCEPT", 9,
-                Color.rgb(100, 105, 113), true);
-
-        bottom.addView(footer, new LinearLayout.LayoutParams(0, -2, 1));
-
-        TextView settings = text("SETTINGS  ⚙", 10, MUTED, true);
-        settings.setPadding(dp(10), dp(10), dp(10), dp(10));
-        settings.setOnClickListener(v -> showSettings());
-        bottom.addView(settings);
-
-        LinearLayout.LayoutParams bottomParams =
-                new LinearLayout.LayoutParams(-1, -2);
-        bottomParams.topMargin = dp(9);
-        root.addView(bottom, bottomParams);
+        root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackgroundColor(BG);
+        root.setPadding(dp(24), dp(14), dp(24), dp(12));
 
         setContentView(root);
-        updateClock();
     }
 
-    private void showCategory(String category) {
-        currentPage = category.toUpperCase(Locale.ROOT);
-        root = newRoot();
-        addPageHeader(root, category.toUpperCase(Locale.ROOT));
-
-        TextView title = text(category, 30, WHITE, true);
-        LinearLayout.LayoutParams titleParams =
-                new LinearLayout.LayoutParams(-1, -2);
-        titleParams.topMargin = dp(16);
-        root.addView(title, titleParams);
-
-        TextView description = text(
-                "Choose an installed app to continue.",
-                13, MUTED, false
-        );
-        LinearLayout.LayoutParams descParams =
-                new LinearLayout.LayoutParams(-1, -2);
-        descParams.topMargin = dp(5);
-        root.addView(description, descParams);
-
-        String[] terms;
-        if ("Navigation".equals(category)) {
-            terms = new String[]{"google maps", "maps", "waze", "here wego"};
-        } else if ("Music".equals(category)) {
-            terms = new String[]{"spotify", "music", "poweramp", "youtube music"};
-        } else {
-            terms = new String[]{"phone", "dialer", "bluetooth"};
-        }
-
-        Button recommended = button("OPEN " + category.toUpperCase(Locale.ROOT), true);
-        LinearLayout.LayoutParams recParams =
-                new LinearLayout.LayoutParams(-1, dp(52));
-        recParams.topMargin = dp(22);
-        root.addView(recommended, recParams);
-
-        recommended.setOnClickListener(v ->
-                launchMatchingApp(terms, category)
-        );
-
-        Button browse = button("CHOOSE INSTALLED APP", false);
-        LinearLayout.LayoutParams browseParams =
-                new LinearLayout.LayoutParams(-1, dp(50));
-        browseParams.topMargin = dp(10);
-        root.addView(browse, browseParams);
-        browse.setOnClickListener(v -> showApps());
-
-        addBottomBack(root);
-        setContentView(root);
+    private int dp(float value) {
+        return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
     }
 
-    private void showApps() {
-        currentPage = "APPS";
-        root = newRoot();
-        addPageHeader(root, "APPLICATIONS");
-
-        TextView title = text("Your apps.", 29, WHITE, true);
-        LinearLayout.LayoutParams titleParams =
-                new LinearLayout.LayoutParams(-1, -2);
-        titleParams.topMargin = dp(14);
-        root.addView(title, titleParams);
-
-        TextView hint = text(
-                "Select an installed application.",
-                12, MUTED, false
-        );
-        LinearLayout.LayoutParams hintParams =
-                new LinearLayout.LayoutParams(-1, -2);
-        hintParams.topMargin = dp(5);
-        hintParams.bottomMargin = dp(12);
-        root.addView(hint, hintParams);
-
-        ScrollView scroll = new ScrollView(this);
-        scroll.setFillViewport(false);
-
-        LinearLayout list = new LinearLayout(this);
-        list.setOrientation(LinearLayout.VERTICAL);
-
-        List<ResolveInfo> apps = getLaunchableApps();
-
-        Collections.sort(apps, new Comparator<ResolveInfo>() {
-            @Override
-            public int compare(ResolveInfo a, ResolveInfo b) {
-                String first = a.loadLabel(getPackageManager()).toString();
-                String second = b.loadLabel(getPackageManager()).toString();
-                return first.compareToIgnoreCase(second);
-            }
-        });
-
-        for (ResolveInfo info : apps) {
-            String label = info.loadLabel(getPackageManager()).toString();
-
-            if ("Koup OS".equalsIgnoreCase(label)
-                    || "KOUP OS".equalsIgnoreCase(label)) {
-                continue;
-            }
-
-            LinearLayout item = new LinearLayout(this);
-            item.setOrientation(LinearLayout.HORIZONTAL);
-            item.setGravity(Gravity.CENTER_VERTICAL);
-            item.setPadding(dp(15), dp(13), dp(15), dp(13));
-            item.setBackground(round(PANEL, dp(12), BORDER, dp(1)));
-
-            TextView appName = text(label, 15, WHITE, true);
-            item.addView(appName, new LinearLayout.LayoutParams(0, -2, 1));
-
-            TextView arrow = text("OPEN  ↗", 10, RED, true);
-            item.addView(arrow);
-
-            LinearLayout.LayoutParams itemParams =
-                    new LinearLayout.LayoutParams(-1, -2);
-            itemParams.bottomMargin = dp(7);
-            list.addView(item, itemParams);
-
-            final String packageName = info.activityInfo.packageName;
-            item.setOnClickListener(v -> launchPackage(packageName));
-        }
-
-        scroll.addView(list);
-        root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
-
-        addBottomBack(root);
-        setContentView(root);
+    private GradientDrawable shape(int color, int radius) {
+        GradientDrawable drawable = new GradientDrawable();
+        drawable.setColor(color);
+        drawable.setCornerRadius(dp(radius));
+        return drawable;
     }
 
-    private void showSettings() {
-        currentPage = "SETTINGS";
-        root = newRoot();
-        addPageHeader(root, "PREFERENCES");
-
-        TextView title = text("Settings.", 30, WHITE, true);
-        LinearLayout.LayoutParams titleParams =
-                new LinearLayout.LayoutParams(-1, -2);
-        titleParams.topMargin = dp(16);
-        root.addView(title, titleParams);
-
-        addSettingCard(root, "DISPLAY",
-                "KOUP OS uses a dark interface designed for the car.");
-
-        addSettingCard(root, "APPLICATIONS",
-                "Manage installed apps using the Apps screen.");
-
-        addSettingCard(root, "D-PLAY",
-                "D-Play remains installed separately. This screen launches it.");
-
-        addSettingCard(root, "ORIGINAL LAUNCHER",
-                "Return to the head unit's original home screen.");
-
-        Button original = button("OPEN ORIGINAL LAUNCHER", true);
-        LinearLayout.LayoutParams originalParams =
-                new LinearLayout.LayoutParams(-1, dp(50));
-        originalParams.topMargin = dp(12);
-        root.addView(original, originalParams);
-
-        original.setOnClickListener(v -> openOriginalLauncher());
-
-        addBottomBack(root);
-        setContentView(root);
-    }
-
-    private void showAbout() {
-        currentPage = "ABOUT";
-        root = newRoot();
-        addPageHeader(root, "KOUP OS");
-
-        TextView logo = text("KOUP", 42, WHITE, true);
-        logo.setLetterSpacing(0.22f);
-
-        LinearLayout.LayoutParams logoParams =
-                new LinearLayout.LayoutParams(-1, -2);
-        logoParams.topMargin = dp(24);
-        root.addView(logo, logoParams);
-
-        TextView os = text("OPERATING EXPERIENCE", 11, RED, true);
-        os.setLetterSpacing(0.16f);
-        root.addView(os);
-
-        TextView description = text(
-                "A custom driver interface for your Kia Forte Koup.\n\n"
-                        + "Designed around a clean dark theme, quick access "
-                        + "to installed apps, and D-Play integration.\n\n"
-                        + "Build: 0.2 concept\n"
-                        + "Package: com.koup.os",
-                14, MUTED, false
-        );
-
-        LinearLayout.LayoutParams descParams =
-                new LinearLayout.LayoutParams(-1, -2);
-        descParams.topMargin = dp(22);
-        root.addView(description, descParams);
-
-        addBottomBack(root);
-        setContentView(root);
-    }
-
-    private LinearLayout newRoot() {
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(dp(25), dp(17), dp(25), dp(14));
-        layout.setBackgroundColor(BG);
-        return layout;
-    }
-
-    private void addPageHeader(LinearLayout layout, String section) {
-        LinearLayout header = new LinearLayout(this);
-        header.setOrientation(LinearLayout.HORIZONTAL);
-        header.setGravity(Gravity.CENTER_VERTICAL);
-
-        TextView brand = text("KOUP", 23, WHITE, true);
-        brand.setLetterSpacing(0.17f);
-        header.addView(brand, new LinearLayout.LayoutParams(0, -2, 1));
-
-        TextView label = text(section, 10, RED, true);
-        label.setLetterSpacing(0.09f);
-        header.addView(label);
-
-        layout.addView(header);
-        addDivider(layout, 13, 3);
-    }
-
-    private void addSettingCard(LinearLayout layout,
-                                String heading, String description) {
-        LinearLayout card = new LinearLayout(this);
-        card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(dp(15), dp(13), dp(15), dp(13));
-        card.setBackground(round(PANEL, dp(12), BORDER, dp(1)));
-
-        TextView title = text(heading, 11, RED, true);
-        title.setLetterSpacing(0.10f);
-        card.addView(title);
-
-        TextView body = text(description, 12, MUTED, false);
-        LinearLayout.LayoutParams bodyParams =
-                new LinearLayout.LayoutParams(-1, -2);
-        bodyParams.topMargin = dp(5);
-        card.addView(body, bodyParams);
-
-        LinearLayout.LayoutParams cardParams =
-                new LinearLayout.LayoutParams(-1, -2);
-        cardParams.topMargin = dp(9);
-        layout.addView(card, cardParams);
-    }
-
-    private void addBottomBack(LinearLayout layout) {
-        Button back = button("←  HOME", false);
-        LinearLayout.LayoutParams params =
-                new LinearLayout.LayoutParams(-1, dp(46));
-        params.topMargin = dp(10);
-        layout.addView(back, params);
-        back.setOnClickListener(v -> showHome());
-    }
-
-    private void addDivider(LinearLayout layout,
-                            int topMargin, int bottomMargin) {
-        View line = new View(this);
-        line.setBackgroundColor(BORDER);
-
-        LinearLayout.LayoutParams params =
-                new LinearLayout.LayoutParams(-1, dp(1));
-        params.topMargin = dp(topMargin);
-        params.bottomMargin = dp(bottomMargin);
-        layout.addView(line, params);
-    }
-
-    private View tile(String symbol, String label, Runnable action) {
-        LinearLayout box = new LinearLayout(this);
-        box.setOrientation(LinearLayout.VERTICAL);
-        box.setGravity(Gravity.CENTER);
-        box.setBackground(round(PANEL, dp(14), BORDER, dp(1)));
-
-        TextView icon = text(symbol, 20, "Apps".equals(label) ? RED : WHITE, true);
-        TextView name = text(label, 11, MUTED, true);
-
-        box.addView(icon);
-
-        LinearLayout.LayoutParams nameParams =
-                new LinearLayout.LayoutParams(-2, -2);
-        nameParams.topMargin = dp(6);
-        box.addView(name, nameParams);
-
-        box.setOnClickListener(v -> action.run());
-        return box;
-    }
-
-    private LinearLayout.LayoutParams weightParams() {
-        return new LinearLayout.LayoutParams(0, -1, 1);
-    }
-
-    private LinearLayout.LayoutParams spacerParams() {
-        return new LinearLayout.LayoutParams(dp(8), 1);
-    }
-
-    private View spacer() {
-        return new View(this);
-    }
-
-    private Button button(String label, boolean primary) {
-        Button b = new Button(this);
-        b.setText(label);
-        b.setAllCaps(false);
-        b.setTextSize(12);
-        b.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        b.setTextColor(primary ? WHITE : MUTED);
-        b.setLetterSpacing(0.04f);
-        b.setBackground(round(
-                primary ? RED : PANEL,
-                dp(12),
-                primary ? RED : BORDER,
-                dp(1)
-        ));
-        return b;
+    private GradientDrawable outline(int color, int radius) {
+        GradientDrawable drawable = shape(color, radius);
+        drawable.setStroke(dp(1), LINE);
+        return drawable;
     }
 
     private TextView text(String value, float size, int color, boolean bold) {
-        TextView t = new TextView(this);
-        t.setText(value);
-        t.setTextSize(size);
-        t.setTextColor(color);
-        t.setGravity(Gravity.CENTER_VERTICAL);
-        t.setTypeface(Typeface.create(
-                "sans-serif",
-                bold ? Typeface.BOLD : Typeface.NORMAL
-        ));
-        return t;
-    }
-
-    private GradientDrawable round(int color, int radius,
-                                   int strokeColor, int strokeWidth) {
-        GradientDrawable d = new GradientDrawable();
-        d.setColor(color);
-        d.setCornerRadius(radius);
-        d.setStroke(strokeWidth, strokeColor);
-        return d;
-    }
-
-    private int dp(int value) {
-        return Math.round(
-                value * getResources().getDisplayMetrics().density
+        TextView view = new TextView(this);
+        view.setText(value);
+        view.setTextSize(size);
+        view.setTextColor(color);
+        view.setGravity(Gravity.CENTER_VERTICAL);
+        view.setFontFeatureSettings("kern");
+        view.setTypeface(
+                Typeface.create(bold ? "sans-serif" : "sans-serif-light",
+                        bold ? Typeface.BOLD : Typeface.NORMAL)
         );
+        return view;
     }
 
-    private void updateClock() {
-        if (clockView == null || dateView == null
-                || !"HOME".equals(currentPage)) {
-            return;
+    private TextView label(String value) {
+        TextView view = text(value.toUpperCase(Locale.US), 10, MUTED, true);
+        view.setLetterSpacing(0.15f);
+        return view;
+    }
+
+    private void gap(LinearLayout parent, int height) {
+        View spacer = new View(this);
+        parent.addView(spacer, new LinearLayout.LayoutParams(
+                1, dp(height)
+        ));
+    }
+
+    private View divider() {
+        View view = new View(this);
+        view.setBackgroundColor(LINE);
+        return view;
+    }
+
+    private LinearLayout row() {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        return row;
+    }
+
+    private LinearLayout column() {
+        LinearLayout column = new LinearLayout(this);
+        column.setOrientation(LinearLayout.VERTICAL);
+        return column;
+    }
+
+    private void addWeighted(LinearLayout parent, View child, float weight) {
+        parent.addView(child, new LinearLayout.LayoutParams(
+                0, -1, weight
+        ));
+    }
+
+    private Button button(String title, boolean primary, Runnable action) {
+        Button button = new Button(this);
+        button.setText(title);
+        button.setTextSize(12);
+        button.setAllCaps(false);
+        button.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        button.setTextColor(WHITE);
+        button.setGravity(Gravity.CENTER);
+        button.setPadding(dp(12), 0, dp(12), 0);
+        button.setBackground(primary ? shape(RED, 12) : outline(PANEL2, 12));
+        button.setOnClickListener(v -> action.run());
+        return button;
+    }
+
+    private LinearLayout card(String title, String subtitle, String symbol,
+                              Runnable action) {
+        LinearLayout card = column();
+        card.setPadding(dp(16), dp(13), dp(16), dp(13));
+        card.setBackground(outline(PANEL, 13));
+        card.setClickable(true);
+        card.setFocusable(true);
+
+        TextView icon = text(symbol, 22, RED, true);
+        card.addView(icon, new LinearLayout.LayoutParams(
+                -1, dp(29)
+        ));
+
+        gap(card, 7);
+
+        card.addView(text(title, 15, WHITE, true));
+
+        if (subtitle != null && !subtitle.isEmpty()) {
+            gap(card, 3);
+            card.addView(text(subtitle, 11, MUTED, false));
         }
 
-        Date now = new Date();
-
-        clockView.setText(
-                new SimpleDateFormat("HH:mm", Locale.getDefault()).format(now)
-        );
-
-        dateView.setText(
-                new SimpleDateFormat("EEE, d MMM", Locale.getDefault()).format(now)
-        );
-
-        clockView.postDelayed(this::updateClock, 30000);
+        card.setOnClickListener(v -> action.run());
+        return card;
     }
 
-    private List<ResolveInfo> getLaunchableApps() {
-        Intent intent = new Intent(Intent.ACTION_MAIN, null);
-        intent.addCategory(Intent.CATEGORY_LAUNCHER);
+    private void addHeader(String title, String subtitle) {
+        LinearLayout header = row();
 
-        return getPackageManager().queryIntentActivities(intent, 0);
+        LinearLayout titles = column();
+        titles.addView(text(title, 22, WHITE, true));
+        titles.addView(text(subtitle, 11, MUTED, false));
+
+        header.addView(titles, new LinearLayout.LayoutParams(
+                0, -2, 1
+        ));
+
+        header.addView(button("‹  HOME", false, this::showHome),
+                new LinearLayout.LayoutParams(dp(105), dp(40)));
+
+        root.addView(header);
+        gap(root, 13);
+        root.addView(divider(), new LinearLayout.LayoutParams(-1, dp(1)));
+        gap(root, 15);
     }
 
-    private void launchMatchingApp(String[] terms, String friendlyName) {
+    private void addFooter() {
+        LinearLayout footer = row();
+        footer.setGravity(Gravity.CENTER_VERTICAL);
+
+        TextView brand = text("KOUP OS", 10, MUTED, true);
+        footer.addView(brand, new LinearLayout.LayoutParams(
+                0, dp(24), 1
+        ));
+
+        footer.addView(text("YOUR DRIVE  •  YOUR WAY", 9, MUTED, true));
+
+        root.addView(footer, new LinearLayout.LayoutParams(-1, dp(25)));
+    }
+
+    // HOME — premium dark cockpit layout with custom coupe artwork.
+    private void showHome() {
+        setup("HOME");
+
+        LinearLayout top = row();
+
+        LinearLayout brand = column();
+        TextView logo = text("KOUP", 29, WHITE, true);
+        logo.setLetterSpacing(0.12f);
+        brand.addView(logo);
+
+        TextView os = text("O S", 10, RED, true);
+        os.setLetterSpacing(0.45f);
+        brand.addView(os);
+
+        top.addView(brand, new LinearLayout.LayoutParams(
+                0, -2, 1
+        ));
+
+        LinearLayout clock = column();
+        clock.setGravity(Gravity.RIGHT);
+
+        String time = new SimpleDateFormat("HH:mm", Locale.getDefault())
+                .format(new Date());
+        String date = new SimpleDateFormat("EEE, dd MMM yyyy",
+                Locale.getDefault()).format(new Date());
+
+        clock.addView(text(time, 27, WHITE, true));
+        clock.addView(text(date, 10, MUTED, false));
+        top.addView(clock);
+
+        root.addView(top);
+        gap(root, 13);
+
+        LinearLayout hero = row();
+        hero.setPadding(dp(20), dp(13), dp(12), dp(8));
+        hero.setBackground(shape(PANEL, 18));
+
+        LinearLayout heroText = column();
+        heroText.setGravity(Gravity.CENTER_VERTICAL);
+
+        TextView eyebrow = text("YOUR DRIVE  •  YOUR WAY", 10, RED, true);
+        eyebrow.setLetterSpacing(0.13f);
+        heroText.addView(eyebrow);
+
+        gap(heroText, 7);
+
+        TextView headline = text("Made for\nyour drive.", 25, WHITE, true);
+        headline.setLineSpacing(dp(2), 1f);
+        heroText.addView(headline);
+
+        gap(heroText, 7);
+
+        heroText.addView(text("A cleaner way to stay connected.",
+                11, MUTED, false));
+
+        gap(heroText, 12);
+
+        Button play = button("▶   OPEN D-PLAY", true, this::openDPlay);
+        heroText.addView(play, new LinearLayout.LayoutParams(
+                -1, dp(43)
+        ));
+
+        hero.addView(heroText, new LinearLayout.LayoutParams(
+                0, -1, 0.88f
+        ));
+
+        CoupeView coupe = new CoupeView();
+        hero.addView(coupe, new LinearLayout.LayoutParams(
+                0, -1, 1.12f
+        ));
+
+        root.addView(hero, new LinearLayout.LayoutParams(
+                -1, 0, 1.45f
+        ));
+
+        gap(root, 13);
+
+        root.addView(label("QUICK ACCESS"));
+        gap(root, 8);
+
+        LinearLayout quick = row();
+
+        addWeighted(quick, card("Navigation", "Find your way", "↗",
+                () -> showCategory("NAVIGATION")), 1);
+        addWeighted(quick, card("Music", "Your soundtrack", "♫",
+                () -> showCategory("MUSIC")), 1);
+        addWeighted(quick, card("Phone", "Calls & contacts", "☎",
+                () -> showCategory("PHONE")), 1);
+        addWeighted(quick, card("Apps", "All applications", "▦",
+                this::showApps), 1);
+
+        root.addView(quick, new LinearLayout.LayoutParams(
+                -1, 0, 0.8f
+        ));
+
+        gap(root, 11);
+
+        LinearLayout bottom = row();
+        bottom.addView(text("READY FOR THE ROAD", 9, MUTED, true),
+                new LinearLayout.LayoutParams(0, dp(30), 1));
+        bottom.addView(button("⚙  SETTINGS", false, this::showSettings),
+                new LinearLayout.LayoutParams(dp(135), dp(36)));
+
+        root.addView(bottom);
+    }
+
+    // Coupe silhouette drawn locally. No downloaded image is required.
+    private class CoupeView extends View {
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+        CoupeView() {
+            super(MainActivity.this);
+        }
+
+        private void stroke(int color, float width) {
+            paint.setColor(color);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(width);
+            paint.setStrokeCap(Paint.Cap.ROUND);
+            paint.setStrokeJoin(Paint.Join.ROUND);
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+
+            float w = getWidth();
+            float h = getHeight();
+
+            canvas.save();
+            canvas.scale(w / 340f, h / 205f);
+
+            // Low red ambient glow under the car.
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(Color.rgb(57, 18, 22));
+            canvas.drawOval(25, 153, 318, 190, paint);
+
+            // Body silhouette.
+            Path body = new Path();
+            body.moveTo(16, 143);
+            body.lineTo(35, 128);
+            body.lineTo(75, 117);
+            body.lineTo(111, 83);
+            body.quadTo(126, 70, 151, 68);
+            body.lineTo(206, 72);
+            body.quadTo(222, 75, 241, 96);
+            body.lineTo(284, 111);
+            body.quadTo(311, 119, 321, 137);
+            body.lineTo(320, 153);
+            body.lineTo(21, 153);
+            body.close();
+
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(Color.rgb(37, 39, 44));
+            canvas.drawPath(body, paint);
+
+            stroke(RED, 2.4f);
+            canvas.drawPath(body, paint);
+
+            // Windows.
+            Path glass = new Path();
+            glass.moveTo(88, 114);
+            glass.lineTo(119, 84);
+            glass.quadTo(129, 76, 151, 76);
+            glass.lineTo(169, 77);
+            glass.lineTo(169, 113);
+            glass.close();
+
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(Color.rgb(13, 17, 22));
+            canvas.drawPath(glass, paint);
+
+            Path sideGlass = new Path();
+            sideGlass.moveTo(176, 78);
+            sideGlass.lineTo(204, 80);
+            sideGlass.quadTo(218, 83, 232, 101);
+            sideGlass.lineTo(244, 112);
+            sideGlass.lineTo(176, 112);
+            sideGlass.close();
+            canvas.drawPath(sideGlass, paint);
+
+            stroke(Color.rgb(94, 96, 103), 1.2f);
+            canvas.drawLine(173, 76, 173, 148, paint);
+            canvas.drawLine(90, 117, 245, 117, paint);
+
+            // Headlight and rear lamp.
+            stroke(WHITE, 2.2f);
+            canvas.drawLine(296, 129, 314, 134, paint);
+
+            stroke(RED, 3.2f);
+            canvas.drawLine(23, 132, 41, 127, paint);
+
+            // Wheels.
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(Color.rgb(7, 8, 10));
+            canvas.drawCircle(82, 149, 25, paint);
+            canvas.drawCircle(258, 149, 25, paint);
+
+            stroke(Color.rgb(119, 122, 130), 2.2f);
+            canvas.drawCircle(82, 149, 17, paint);
+            canvas.drawCircle(258, 149, 17, paint);
+
+            stroke(RED, 1.5f);
+            canvas.drawCircle(82, 149, 7, paint);
+            canvas.drawCircle(258, 149, 7, paint);
+
+            stroke(Color.rgb(105, 108, 115), 1.1f);
+            canvas.drawLine(82, 133, 82, 165, paint);
+            canvas.drawLine(66, 149, 98, 149, paint);
+            canvas.drawLine(258, 133, 258, 165, paint);
+            canvas.drawLine(242, 149, 274, 149, paint);
+
+            // Ground line.
+            stroke(Color.rgb(67, 40, 43), 1f);
+            canvas.drawLine(12, 180, 328, 180, paint);
+
+            canvas.restore();
+        }
+    }
+
+    private void showCategory(String category) {
+        setup(category);
+        addHeader(category, categorySubtitle(category));
+
+        LinearLayout content = column();
+        content.setGravity(Gravity.CENTER);
+        content.setPadding(dp(15), dp(12), dp(15), dp(12));
+
+        TextView symbol;
+        String title;
+        String subtitle;
+        String primary;
+
+        if ("NAVIGATION".equals(category)) {
+            symbol = text("↗", 54, RED, true);
+            title = "Every journey starts here.";
+            subtitle = "Open your installed navigation app to plan your route.";
+            primary = "OPEN NAVIGATION";
+        } else if ("MUSIC".equals(category)) {
+            symbol = text("♫", 54, RED, true);
+            title = "Set the soundtrack.";
+            subtitle = "Open your music player and get back to your drive.";
+            primary = "OPEN MUSIC";
+        } else {
+            symbol = text("☎", 54, RED, true);
+            title = "Stay connected.";
+            subtitle = "Open your phone or contacts app.";
+            primary = "OPEN PHONE";
+        }
+
+        content.addView(symbol);
+        gap(content, 10);
+
+        TextView heading = text(title, 23, WHITE, true);
+        heading.setGravity(Gravity.CENTER);
+        content.addView(heading);
+
+        gap(content, 8);
+
+        TextView description = text(subtitle, 12, MUTED, false);
+        description.setGravity(Gravity.CENTER);
+        content.addView(description);
+
+        gap(content, 22);
+
+        content.addView(button(primary, true, () -> launchCategory(category)),
+                new LinearLayout.LayoutParams(dp(230), dp(46)));
+
+        gap(content, 10);
+
+        content.addView(button("BROWSE INSTALLED APPS", false, this::showApps),
+                new LinearLayout.LayoutParams(dp(230), dp(42)));
+
+        root.addView(content, new LinearLayout.LayoutParams(
+                -1, 0, 1
+        ));
+
+        addFooter();
+    }
+
+    private String categorySubtitle(String category) {
+        if ("NAVIGATION".equals(category)) return "YOUR NEXT DESTINATION";
+        if ("MUSIC".equals(category)) return "YOUR SOUNDTRACK";
+        return "CALLS & CONTACTS";
+    }
+
+    private void launchCategory(String category) {
+        String[] keys;
+
+        if ("NAVIGATION".equals(category)) {
+            keys = new String[]{"maps", "navigation", "waze"};
+        } else if ("MUSIC".equals(category)) {
+            keys = new String[]{"music", "spotify", "audio", "radio"};
+        } else {
+            keys = new String[]{"phone", "dialer", "contacts"};
+        }
+
+        if (!launchMatching(keys)) {
+            new AlertDialog.Builder(this)
+                    .setTitle("App not found")
+                    .setMessage("No matching installed app was found. Open Apps to choose an available application.")
+                    .setPositiveButton("OPEN APPS", (d, w) -> showApps())
+                    .setNegativeButton("CLOSE", null)
+                    .show();
+        }
+    }
+
+    private void openDPlay() {
+        if (!launchMatching(new String[]{"d-play", "dplay", "d play"})) {
+            new AlertDialog.Builder(this)
+                    .setTitle("D-Play not found")
+                    .setMessage("D-Play could not be found among launchable apps. Open Apps to check the installed applications.")
+                    .setPositiveButton("OPEN APPS", (d, w) -> showApps())
+                    .setNegativeButton("CLOSE", null)
+                    .show();
+        }
+    }
+
+    private boolean launchMatching(String[] keys) {
         List<ResolveInfo> apps = getLaunchableApps();
 
-        for (String term : terms) {
+        for (String key : keys) {
             for (ResolveInfo info : apps) {
-                String label = info.loadLabel(getPackageManager())
-                        .toString()
-                        .toLowerCase(Locale.ROOT);
+                String name = info.loadLabel(getPackageManager())
+                        .toString().toLowerCase(Locale.US);
 
-                if (label.contains(term)) {
-                    Intent launch = getPackageManager()
+                if (name.contains(key.toLowerCase(Locale.US))) {
+                    Intent intent = getPackageManager()
                             .getLaunchIntentForPackage(
                                     info.activityInfo.packageName
                             );
 
-                    if (launch != null) {
+                    if (intent != null) {
                         try {
-                            startActivity(launch);
-                            return;
+                            startActivity(intent);
+                            return true;
                         } catch (Exception ignored) {
-                            // Try another matching app.
                         }
                     }
                 }
             }
         }
 
-        Toast.makeText(
-                this,
-                friendlyName + " app not found. Open Apps to choose it.",
-                Toast.LENGTH_LONG
-        ).show();
+        return false;
     }
 
-    private void launchPackage(String packageName) {
-        Intent launch = getPackageManager().getLaunchIntentForPackage(packageName);
+    private List<ResolveInfo> getLaunchableApps() {
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.addCategory(Intent.CATEGORY_LAUNCHER);
 
-        if (launch == null) {
-            Toast.makeText(this, "This app cannot be opened.", Toast.LENGTH_SHORT)
-                    .show();
-            return;
-        }
+        List<ResolveInfo> apps = getPackageManager()
+                .queryIntentActivities(intent, 0);
 
-        try {
-            startActivity(launch);
-        } catch (Exception e) {
-            Toast.makeText(this, "Could not open app.", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private void openOriginalLauncher() {
-        Intent home = new Intent(Intent.ACTION_MAIN);
-        home.addCategory(Intent.CATEGORY_HOME);
-
-        List<ResolveInfo> homes = getPackageManager()
-                .queryIntentActivities(home, 0);
-
-        for (ResolveInfo info : homes) {
-            if (!info.activityInfo.packageName.equals(getPackageName())) {
-                Intent launch = getPackageManager()
-                        .getLaunchIntentForPackage(
-                                info.activityInfo.packageName
+        Collections.sort(apps, new Comparator<ResolveInfo>() {
+            @Override
+            public int compare(ResolveInfo a, ResolveInfo b) {
+                return a.loadLabel(getPackageManager()).toString()
+                        .compareToIgnoreCase(
+                                b.loadLabel(getPackageManager()).toString()
                         );
+            }
+        });
+
+        return apps;
+    }
+
+    private void showApps() {
+        setup("APPS");
+        addHeader("Apps", "ALL INSTALLED APPLICATIONS");
+
+        ScrollView scroll = new ScrollView(this);
+        LinearLayout list = column();
+        list.setPadding(0, 0, 0, dp(8));
+
+        List<ResolveInfo> apps = getLaunchableApps();
+        boolean found = false;
+
+        for (ResolveInfo info : apps) {
+            if (info.activityInfo.packageName.equals(getPackageName())) {
+                continue;
+            }
+
+            found = true;
+
+            String appName = info.loadLabel(getPackageManager()).toString();
+            String packageName = info.activityInfo.packageName;
+
+            LinearLayout item = row();
+            item.setPadding(dp(13), dp(8), dp(13), dp(8));
+            item.setBackground(outline(PANEL, 11));
+
+            TextView initial = text(
+                    appName.length() > 0
+                            ? appName.substring(0, 1).toUpperCase(Locale.US)
+                            : "•",
+                    21, RED, true
+            );
+            initial.setGravity(Gravity.CENTER);
+            initial.setBackground(shape(PANEL2, 10));
+
+            item.addView(initial, new LinearLayout.LayoutParams(
+                    dp(42), dp(42)
+            ));
+
+            LinearLayout details = column();
+            details.setGravity(Gravity.CENTER_VERTICAL);
+            details.setPadding(dp(12), 0, 0, 0);
+            details.addView(text(appName, 14, WHITE, true));
+            details.addView(text(packageName, 9, MUTED, false));
+
+            item.addView(details, new LinearLayout.LayoutParams(
+                    0, dp(46), 1
+            ));
+
+            item.addView(text("›", 25, MUTED, false));
+
+            item.setOnClickListener(v -> {
+                Intent launch = getPackageManager()
+                        .getLaunchIntentForPackage(packageName);
 
                 if (launch != null) {
                     try {
                         startActivity(launch);
-                        return;
-                    } catch (Exception ignored) {
-                        // Continue to the next available home app.
+                    } catch (Exception e) {
+                        Toast.makeText(this, "Unable to open app",
+                                Toast.LENGTH_SHORT).show();
                     }
                 }
-            }
+            });
+
+            LinearLayout.LayoutParams itemParams =
+                    new LinearLayout.LayoutParams(-1, dp(62));
+            itemParams.bottomMargin = dp(7);
+            list.addView(item, itemParams);
         }
 
-        Toast.makeText(
-                this,
-                "Original launcher not found in installed apps.",
-                Toast.LENGTH_LONG
-        ).show();
+        if (!found) {
+            TextView empty = text("No launchable applications found.",
+                    14, MUTED, false);
+            list.addView(empty);
+        }
+
+        scroll.addView(list);
+        root.addView(scroll, new LinearLayout.LayoutParams(
+                -1, 0, 1
+        ));
+
+        addFooter();
+    }
+
+    private void showSettings() {
+        setup("SETTINGS");
+        addHeader("Settings", "PERSONALISE YOUR KOUP OS EXPERIENCE");
+
+        ScrollView scroll = new ScrollView(this);
+        LinearLayout content = column();
+
+        addSetting(content, "Display & interface",
+                "KOUP OS dark theme and visual style",
+                "◐", () -> showInfo("Display & interface",
+                        "KOUP OS uses the approved dark automotive theme. The interface is designed for a landscape head unit."));
+
+        addSetting(content, "Installed applications",
+                "Browse apps available on this head unit",
+                "▦", this::showApps);
+
+        addSetting(content, "D-Play",
+                "Launch the installed D-Play application",
+                "▶", this::openDPlay);
+
+        addSetting(content, "Original launcher",
+                "Return to the head unit's Android home screen",
+                "⌂", this::openOriginalLauncher);
+
+        addSetting(content, "About KOUP OS",
+                "Version and project information",
+                "i", this::showAbout);
+
+        scroll.addView(content);
+
+        root.addView(scroll, new LinearLayout.LayoutParams(
+                -1, 0, 1
+        ));
+
+        addFooter();
+    }
+
+    private void addSetting(LinearLayout parent, String title,
+                            String subtitle, String symbol, Runnable action) {
+        LinearLayout item = row();
+        item.setPadding(dp(14), dp(8), dp(14), dp(8));
+        item.setBackground(outline(PANEL, 12));
+
+        TextView icon = text(symbol, 24, RED, true);
+        icon.setGravity(Gravity.CENTER);
+
+        item.addView(icon, new LinearLayout.LayoutParams(dp(43), dp(44)));
+
+        LinearLayout labels = column();
+        labels.setGravity(Gravity.CENTER_VERTICAL);
+        labels.setPadding(dp(12), 0, 0, 0);
+        labels.addView(text(title, 14, WHITE, true));
+        labels.addView(text(subtitle, 10, MUTED, false));
+
+        item.addView(labels, new LinearLayout.LayoutParams(
+                0, dp(46), 1
+        ));
+        item.addView(text("›", 24, MUTED, false));
+
+        item.setOnClickListener(v -> action.run());
+
+        LinearLayout.LayoutParams params =
+                new LinearLayout.LayoutParams(-1, dp(62));
+        params.bottomMargin = dp(8);
+        parent.addView(item, params);
+    }
+
+    private void showInfo(String title, String message) {
+        new AlertDialog.Builder(this)
+                .setTitle(title)
+                .setMessage(message)
+                .setPositiveButton("OK", null)
+                .show();
+    }
+
+    private void showAbout() {
+        setup("ABOUT");
+        addHeader("About KOUP OS", "MADE FOR YOUR DRIVE");
+
+        LinearLayout content = column();
+        content.setGravity(Gravity.CENTER);
+        content.setPadding(dp(20), dp(10), dp(20), dp(10));
+
+        TextView logo = text("KOUP", 43, WHITE, true);
+        logo.setGravity(Gravity.CENTER);
+        logo.setLetterSpacing(0.16f);
+        content.addView(logo);
+
+        TextView os = text("O S", 12, RED, true);
+        os.setGravity(Gravity.CENTER);
+        os.setLetterSpacing(0.45f);
+        content.addView(os);
+
+        gap(content, 15);
+
+        TextView slogan = text("YOUR DRIVE  •  YOUR WAY", 11, MUTED, true);
+        slogan.setGravity(Gravity.CENTER);
+        content.addView(slogan);
+
+        gap(content, 20);
+
+        content.addView(text("Version 0.2", 13, WHITE, true));
+        gap(content, 7);
+        content.addView(text("A custom interface for your Kia Forte Koup.",
+                12, MUTED, false));
+
+        gap(content, 18);
+
+        content.addView(button("BACK TO HOME", true, this::showHome),
+                new LinearLayout.LayoutParams(dp(200), dp(43)));
+
+        root.addView(content, new LinearLayout.LayoutParams(
+                -1, 0, 1
+        ));
+
+        addFooter();
+    }
+
+    private void openOriginalLauncher() {
+        try {
+            Intent home = new Intent(Intent.ACTION_MAIN);
+            home.addCategory(Intent.CATEGORY_HOME);
+            home.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(home);
+        } catch (Exception e) {
+            showInfo("Original launcher",
+                    "Android could not open the original launcher automatically. Use the head unit's Home button or Android system navigation to return.");
+        }
+    }
+
+    private void showDPlayScreen() {
+        setup("D-PLAY");
+        addHeader("D-Play", "YOUR CONNECTED DRIVE");
+
+        LinearLayout content = column();
+        content.setGravity(Gravity.CENTER);
+
+        TextView mark = text("▶", 58, RED, true);
+        mark.setGravity(Gravity.CENTER);
+        content.addView(mark);
+
+        gap(content, 12);
+
+        TextView title = text("Ready when you are.", 24, WHITE, true);
+        title.setGravity(Gravity.CENTER);
+        content.addView(title);
+
+        gap(content, 8);
+
+        TextView desc = text("Launch the D-Play app installed on your head unit.",
+                12, MUTED, false);
+        desc.setGravity(Gravity.CENTER);
+        content.addView(desc);
+
+        gap(content, 22);
+
+        content.addView(button("LAUNCH D-PLAY", true, this::openDPlay),
+                new LinearLayout.LayoutParams(dp(230), dp(46)));
+
+        root.addView(content, new LinearLayout.LayoutParams(-1, 0, 1));
+        addFooter();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if ("HOME".equals(currentScreen)) {
+            super.onBackPressed();
+        } else {
+            showHome();
+        }
     }
 }
